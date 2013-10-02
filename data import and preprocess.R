@@ -86,14 +86,14 @@ association = foreach(i = 1:nrow(F3.expression), .combine = rbind ) %dopar% {
               data$expr = t(F3.expression[i,]) 
               model = glm(expr ~ as.factor(my.cigreg == 2)+ as.factor(my.cigreg == 1)
                 + rtalter + as.factor(rcsex)
-                + as.factor(my.alkkon) + rtbmi + as.factor(rtdiabet)
+                + as.factor(my.alkkon) + rtbmi #+ as.factor(rtdiabet)
                 , data = data
           #, family = binomial
                )
         return(c(summary(model)$coefficients[2,], summary(model)$coefficients[3,]))
 }
 rownames(association)=rownames(F3.expression)
-write.csv(association, file = "F3 smoking associated genes_lm_combine FS and NS.csv")
+write.csv(association, file = "F3 smoking associated genes_lm_combine FS and NS_diab unadj.csv")
 
 
 data = S4[S4$expr_in_S4!="",]
@@ -101,16 +101,16 @@ rownames(data) = data$zz_nr_s4f4_genexp
 data = data[colnames(S4.expression),]
 association = foreach(i = 1:nrow(S4.expression), .combine = rbind ) %dopar% {
         data$expr = S4.expression[i,]
-        model = glm(expr ~ as.factor(my.cigreg == 2)+ as.factor(my.cigreg == 1)
+        model = glm(expr ~ as.factor(my.cigreg == 2) #+ as.factor(my.cigreg == 1)
           + ltalter + as.factor(lcsex)
-          + as.factor(my.alkkon) + ltbmi + as.factor(ltdiabet)
+          + as.factor(my.alkkon) + ltbmi #+ as.factor(ltdiabet)
           , data = data
           #, family = binomial
           )
         return(c(summary(model)$coefficients[2,], summary(model)$coefficients[3,]))
       }
 rownames(association)=rownames(S4.expression)
-write.csv(association, file = "S4 smoking associated genes_lm_combine FS and NS.csv")
+write.csv(association, file = "S4 smoking associated genes_lm_combine FS and NS_diab unadj.csv")
 
 data = F4[(F4$expr_in_F4!=""), ]
 rownames(data) = data$zz_nr_s4f4_genexp
@@ -119,13 +119,13 @@ association = foreach(i = 1:nrow(F4.expression), .combine = rbind ) %dopar% {
         data$expr = F4.expression[i,]
         model = glm(expr ~ as.factor(my.cigreg ==2 ) + as.factor(my.cigreg == 1)
           + utalter + as.factor(ucsex)
-          + as.factor(my.alkkon) + utbmi + as.factor(utdiabet)
+          + as.factor(my.alkkon) + utbmi #+ as.factor(utdiabet)
           , data = data
          # , family = binomial
           )
         return(c(summary(model)$coefficients[2,], summary(model)$coefficients[3,]))
       }
 rownames(association) = rownames(F4.expression)
-write.csv(association, file = "F4 smoking associated genes_lm_combine FS and NS.csv")
+write.csv(association, file = "F4 smoking associated genes_lm_combine FS and NS_diab unadj.csv")
 
 
