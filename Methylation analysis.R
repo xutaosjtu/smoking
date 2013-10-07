@@ -91,4 +91,51 @@ for(i in files){
 	write.csv(rst.chr, paste("association in chr",chrnum,".csv"))
 }
 
-##
+## merge the results
+files = dir("Results/F3", pattern="*.csv", full.names = T)
+files = files[1:22]
+association.cpg.f3 = NULL
+association.cpg.f3 = foreach(i = 1:length(files), .combine = rbind) %dopar%{
+	tmp = read.csv(files[i], row.names =1)
+	 return(tmp)
+}
+
+
+files = dir("Results/F4", pattern="*.csv", full.names = T)
+files = files[1:22]
+association.cpg.f4 = NULL
+association.cpg.f4 = foreach(i = 1:length(files), .combine = rbind) %dopar%{
+	tmp = read.csv(files[i], row.names =1)
+	 return(tmp)
+}
+
+cpg.confirmed = intersect(association.cpg.f3, association.cpg.f4)
+
+## meta-analysis
+files = dir("Results/F3", pattern = "*.csv")
+
+rst = foreach(i = 1:length(files), .combine = rbind) %dopar%{
+	f4.rst = read.csv(paste("Results/F4/",files[i], sep = ""),row.names = 1)
+	f3.rst = read.csv(paste("Results/F3/",files[i], sep = ""), row.names = 1)
+
+	f4.rst = f4.rst[, 5:8]
+	f3.rst = f3.rst[, 1:4]
+
+	validcpg = intersect(rownames(f4.rst), rownames(f3.rst))
+
+	analysis.meta<-function(x, rst1, rst2,...){
+		#tmp = rbind(rst1[x,], rst2[x,])
+		rma.test = rma(yi = c(rst1[x,1], rst2[x,1]), sei = c(rst1[x,2], rst2[x,2]),
+					method = "FE",
+					measure = "GEN")
+		summary = c(rma.test$b, rma.test$se, rma.test$ci.lb, rma.test$ci.ub,rma.test$pval, rma.test$QE, rma.test$QEp)
+		return(summary)
+	}
+
+	meta.rst = sapply(validcpg, analysis.meta, rst1 = f4.rst, rst2 = f3.rst)
+	meta.rst = t(meta.rst)
+	rownames(meta.rst) = validcpg
+	colnames(meta.rst) = c("estimates", "se", "ci.lb","ci.ub", "pvalue","heterogenity", "Hetero Pvalue")
+	write.csv(meta.rst, file = files[i])
+	#return(meta.rst)
+}
