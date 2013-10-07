@@ -2,12 +2,24 @@ files = dir("methylation/F3", pattern="*txt.gz", full.names = T)
 F3 = subset(F3, subset = !is.na(zz_nr_f3_meth))
 rownames(F3) = F3$zz_nr_f3_meth
 confounder = c( "rtalter", "rcsex", "rtalkkon", "rtbmi")
+## Sensitivity analysis with WBC
+WBC.F3 = read.csv("WBC_estimation/Data/KF3_estimated_cell_proportions.csv", sep = ";")
+WBC.F3[,1] = substr(WBC.F3[,1], 2, 10)
+colnames(WBC.F3)[1] = "zz_nr_f3_meth"
+F3 = merge(WBC.F3, F3)
+##
 data = F3
 
 files = dir("methylation/F4", pattern="*txt.gz", full.names = T)
 F4 = subset(F4, subset = !is.na(zz_nr_f4_meth))
 rownames(F4) = F4$zz_nr_f4_meth
 confounder = c( "utalteru", "ucsex", "utalkkon", "utbmi")
+## Sensitivity analysis with WBC
+WBC.F4 = read.csv("WBC_estimation/Data/KF4_estimated_cell_proportions.csv", sep = ";")
+WBC.F4[,1] = substr(WBC.F4[,1], 2, 10)
+colnames(WBC.F4)[1] = "zz_nr_f4_meth"
+F4 = merge(WBC.F4, F4)
+##
 data = F4
 
 for(i in files){
@@ -39,7 +51,6 @@ for(i in files){
 	write.csv(rst.chr, paste("association in chr",chrnum,".csv"))
 }
 
-
 require(doMC)
 registerDoMC(cores = 8)
 
@@ -61,7 +72,8 @@ associations = foreach(i = 1:length(files), .combine = rbind ) %dopar% {
 		 model = glm(mvalue ~ as.factor(my.cigreg)
                 + utalteru + as.factor(ucsex)
                 + as.factor(my.alkkon) + utbmi #+ as.factor(rtdiabet)
-                , data = data
+                + CD8T + CD4T + NK + Bcell + Mono + Gran # adjust for WBC
+				, data = data
           #, family = binomial
                )
 		rst.chr = rbind(rst.chr, c(summary(model)$coefficients[2,], summary(model)$coefficients[3,]))
@@ -69,7 +81,7 @@ associations = foreach(i = 1:length(files), .combine = rbind ) %dopar% {
 	}
 	close(f)
 	rownames(rst.chr) = CpG
-	write.csv(rst.chr, paste("association in chr",chrnum,".csv"))
+	write.csv(rst.chr, paste("association in chr",chrnum,"_adjust WBC.csv"))
 	return(rst.chr)
 }
 
