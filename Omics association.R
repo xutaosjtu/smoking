@@ -35,9 +35,9 @@ for(m in metabo.valid){
   for(e in 1:nrow(F4.expression)){
     F4.sub$expression = F4.expression[e,as.character(F4.sub$zz_nr_s4f4_genexp)]  
     model = lm( metabolite ~ expression 
-        + as.factor(utcigreg) 
+        + as.factor(my.cigreg) 
         + utalteru + as.factor(ucsex)  + utbmi + utalkkon
-        + as.factor(utdiabet)
+        #+ as.factor(utdiabet)
         , data = F4.sub
         )
     tmp = c(tmp,summary(model)$coef[2,])
@@ -47,6 +47,8 @@ for(m in metabo.valid){
 rownames(rst) = metabo.valid
 metab.expresion = apply(rst[, 4*(1:20)], 2, function(x) which(x<0.05))
 names(metab.expresion) = rownames(F4.expression)
+
+sapply(metab.expresion, function(x) return(intersect(names(x), metabo.asso2)))
 
 ## methylation -----  expression
 cpg.valid = rownames(F4.methy)

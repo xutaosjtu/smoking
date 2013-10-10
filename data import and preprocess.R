@@ -36,8 +36,8 @@ S4$my.cigreg = S4$ltcigreg
 S4$my.cigreg[which(S4$ltcigreg==1)]=2
 S4$my.cigreg = 4-S4$my.cigreg
 
-F4$my.cigreg = F4$utcigreg
-F4$my.cigreg[which(F4$utcigreg==1)]=2
+F4$my.cigreg = F4$utcigreg_sf
+F4$my.cigreg[which(F4$utcigreg_sf==1)]=2
 F4$my.cigreg = 4-F4$my.cigreg
 #F4$my.cigreg = as.factor(F4$my.cigreg)
 

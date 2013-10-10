@@ -12,4 +12,4 @@ for(m in metabo.valid){
 rownames(rst) = metabo.valid
 rst = data.frame(rst, fdr = p.adjust(rst[,4], method = "BH"), bonferroni = p.adjust(rst[,4], method = "bonf"))
 
-metabo.asso = subset(metabo.valid, subset = rst$fdr<0.05)
+metabo.asso2 = subset(metabo.valid, subset = rst$bonferroni<0.05)
