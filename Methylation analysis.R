@@ -85,7 +85,7 @@ associations = foreach(i = 1:length(files), .combine = rbind ) %dopar% {
 	return(rst.chr)
 }
 
-##
+## give row names to the result
 for(i in files){
 	chrnum = unlist(strsplit(i, split = "_"))[6]
 	rst.chr = read.csv(paste("association in chr",chrnum,".csv"), row.names = 1)
@@ -109,7 +109,7 @@ files = files[1:22]
 association.cpg.f3 = NULL
 association.cpg.f3 = foreach(i = 1:length(files), .combine = rbind) %dopar%{
 	tmp = read.csv(files[i], row.names =1)
-	 return(tmp)
+	return(tmp)
 }
 
 

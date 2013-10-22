@@ -13,7 +13,8 @@ methy.data = foreach(i = 1:length(files), .combine = rbind ) %dopar% {
 	data = NULL
 	while( length(line) != 0 ) {
 		 tmp = unlist(strsplit(line, split = " "))
-		 if(tmp[1] %in% cpg.confirmed){
+		 #if(tmp[1] %in% cpg.confirmed){
+     if(sum(unlist(lapply(cpgs_of_gene, function(x) tmp[1] %in% x )))>=1){
 			data = rbind(data, tmp)
 		 }
 		 line=readLines(f,n=1)
@@ -33,7 +34,16 @@ for(i in files){
 	rst = rbind(rst, samples)
 }
 
-
+### extract associations with smoking
+files = dir("Results/F3", pattern="*.csv", full.names = T)
+files = dir("Results/F4", pattern="*.csv", full.names = T)
+files = files[1:22]
+cpgs = unlist(cpgs_of_gene)
+association = foreach(i = 1:length(files), .combine = rbind ) %dopar% {
+  tmp = read.csv(files[i], row.names =1)
+  tmp.cpgs = intersect(rownames(tmp), cpgs)
+  return(tmp[tmp.cpgs, ])
+}
 
 #################################################################
 ## Candidates of differentially expressed genes: CLDND1, LRRN3

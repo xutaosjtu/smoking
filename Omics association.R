@@ -34,8 +34,8 @@ for(m in metabo.valid){
   tmp =NULL
   for(e in 1:nrow(F4.expression)){
     F4.sub$expression = F4.expression[e,as.character(F4.sub$zz_nr_s4f4_genexp)]  
-    model = lm( metabolite ~ expression 
-        + as.factor(my.cigreg) 
+    model = lm( expression ~  metabolite
+        + as.factor(my.cigreg ==2 ) + as.factor(my.cigreg == 1)
         + utalteru + as.factor(ucsex)  + utbmi + utalkkon
         #+ as.factor(utdiabet)
         , data = F4.sub
@@ -45,10 +45,11 @@ for(m in metabo.valid){
   rst = rbind(rst,tmp)
 }
 rownames(rst) = metabo.valid
-metab.expresion = apply(rst[, 4*(1:20)], 2, function(x) which(x<0.05))
+metab.expresion = apply(rst[, 4*(1:nrow(F4.expression))], 2, function(x) which(x<0.05))
 names(metab.expresion) = rownames(F4.expression)
 
-sapply(metab.expresion, function(x) return(intersect(names(x), metabo.asso2)))
+metab.expresion = sapply(metab.expresion, function(x) return(intersect(names(x), metabo.asso)))
+names(metab.expresion) = annotation[match(names(metab.expresion), annotation[,1]),2]
 
 ## methylation -----  expression
 cpg.valid = rownames(F4.methy)
@@ -61,7 +62,7 @@ for(cpg in cpg.valid){
     model = lm(expression ~ methy
                + as.factor(my.cigreg) 
                + utalteru + as.factor(ucsex)  + utbmi + utalkkon
-               + as.factor(utdiabet)
+               #+ as.factor(utdiabet)
                , data = F4.sub
                )
     tmp = c(tmp, summary(model)$coef[2,])
@@ -69,25 +70,8 @@ for(cpg in cpg.valid){
   rst = rbind(rst, tmp)
 }
 rownames(rst) = cpg.valid
-
-
-
-## prove smoking --x-- expression adjusting the methylation sites
-## not possible: smoking like a gene with pleiotropy;
-## Can only see reduced effect size after adjusting the methylation sites.
-# rst = NULL
-# for(e in nrow(F4.expression)){
-#   F4.sub$expression = F4.expression[e,as.character(F4.sub$zz_nr_s4f4_genexp)]
-#   model = lm(expression ~ #cg23771366+cg01208318+cg22851561+cg06321596+cg19572487+cg23842572+cg00073090+cg03636183+cg07381806+cg15159987+cg03547355+cg09469355+cg27537125+cg02532700+cg05575921+cg14753356+cg24540678+
-#                #cg09099830+cg03604011+cg07826859+
-#              + as.factor(my.cigreg) 
-#              + utalteru + as.factor(ucsex)  + utbmi + utalkkon
-#              + as.factor(utdiabet)
-#              , data = cbind(F4.sub,t(F4.methy[cpg.valid, as.character(F4.sub$zz_nr_f4_meth)]))
-#   )
-#   rst = rbind(rst, summary(model)$coef[4,])
-# }
-
+expresion.methy = apply(rst[,4*(1:nrow(F4.expression))], 2, function(x) which(x<0.05/nrow(F4.methy)))
+names(expresion.methy) = rownames(F4.expression)
 
 ## methylation -----  metabolites
 cpg.valid = rownames(F4.methy)
@@ -96,12 +80,12 @@ rst = NULL;
 for(cpg in cpg.valid){
   F4.sub$methy = t(F4.methy[cpg, as.character(F4.sub$zz_nr_f4_meth)])
   tmp = NULL
-  for(m in metabo.valid){
+  for(m in metabo.asso){
     F4.sub$metabolite = scale(log(F4.metab[as.character(F4.sub$zz_nr_f4_bio),m]))
-    model = lm(metabolite ~ methy
-               + as.factor(utcigreg) 
+    model = lm(methy ~ metabolite
+               + as.factor(my.cigreg) 
                + utalteru + as.factor(ucsex)  + utbmi + utalkkon
-               + as.factor(utdiabet)
+               #+ as.factor(utdiabet)
                , data = F4.sub
     )
     tmp = c(tmp, summary(model)$coef[2,])
@@ -109,6 +93,68 @@ for(cpg in cpg.valid){
   rst = rbind(rst, tmp)
 }
 rownames(rst) = cpg.valid
+methy.metab = apply(rst[,4*(1:length(metabo.asso))], 2, function(x) which(x<0.05))
+names(methy.metab) = metabo.asso
+
+#/length(metabo.asso)
+
+methy.metab = sapply(methy.metab, function(x) return(intersect(names(x), methy.asso)))
 
 
+## prove smoking --x-- expression adjusting the methylation sites
+## not possible: smoking like a gene with pleiotropy;
+## Can only see reduced effect size after adjusting the methylation sites.
+rst = NULL
+for(e in nrow(F4.expression)){
+  F4.sub$expression = F4.expression[e,as.character(F4.sub$zz_nr_s4f4_genexp)]
+  model = lm(expression ~ #cg02909929+cg03652339+cg05983405+cg13775629+cg18352710+cg22900360+cg26971585+cg10126923+cg12916723+
+               cg22900360 + 
+              as.factor(my.cigreg) 
+             + utalteru + as.factor(ucsex)  + utbmi + utalkkon
+             + as.factor(utdiabet)
+             , data = cbind(F4.sub,t(F4.methy[cpg.valid, as.character(F4.sub$zz_nr_f4_meth)]))
+  )
+  rst = rbind(rst, summary(model)$coef[4,])
+}
+
+F4.sub$expression = F4.expression[e,as.character(F4.sub$zz_nr_s4f4_genexp)]
+F4.sub$metabo = scale(log(F4.metab[as.character(F4.sub$zz_nr_f4_bio),m]))
+model = lm(metabo ~ #cg02909929+cg03652339+cg05983405+cg13775629+cg18352710+cg22900360+cg26971585+cg10126923+cg12916723+
+              #cg22900360 + 
+             #metabo + 
+             #expression
+           + as.factor(my.cigreg) 
+           + utalteru + as.factor(ucsex)  + utbmi + utalkkon
+           #+ as.factor(utdiabet)
+           , data = cbind(F4.sub,t(F4.methy[cpg.valid, as.character(F4.sub$zz_nr_f4_meth)]))
+)
+
+
+## convert to adjacency list
+toList = function(x){
+  return(cbind(
+    rep(names(x),sapply(x, length)), 
+    unlist(sapply(x, function(y) names(y)))
+  )
+  )
+}
+
+toList2 = function(x){
+  return(cbind(
+    rep(names(x),sapply(x, length)), 
+    unlist(sapply(x, function(y) return(y)))
+  )
+  )
+}
+
+methy.metab.list = toList2(methy.metab)
+
+metab.expresion.list = toList2(metab.expresion)
+
+expresion.methy.list = toList(expresion.methy)
+
+tmp = rbind(metab.expresion.list, methy.metab.list, expresion.methy.list)
+write.csv(unique(c(tmp[,1], tmp[,2])), "property.csv", quote=FALSE)
+
+write.csv(rbind(metab.expresion.list, methy.metab.list, expresion.methy.list), file = "List_associations.csv",quote=FALSE)
 
