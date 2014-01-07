@@ -101,8 +101,8 @@ names(methy.metab) = metabo.asso
 methy.metab = sapply(methy.metab, function(x) return(intersect(names(x), methy.asso)))
 
 
-## prove smoking --x-- expression adjusting the methylation sites
-## not possible: smoking like a gene with pleiotropy;
+## Test: smoking --x-- expression adjusting the methylation sites
+## Result:not possible: smoking is like a gene with pleiotropy;
 ## Can only see reduced effect size after adjusting the methylation sites.
 rst = NULL
 for(e in nrow(F4.expression)){
@@ -117,14 +117,15 @@ for(e in nrow(F4.expression)){
   rst = rbind(rst, summary(model)$coef[4,])
 }
 
+
 F4.sub$expression = F4.expression[e,as.character(F4.sub$zz_nr_s4f4_genexp)]
 F4.sub$metabo = scale(log(F4.metab[as.character(F4.sub$zz_nr_f4_bio),m]))
 model = lm(metabo ~ #cg02909929+cg03652339+cg05983405+cg13775629+cg18352710+cg22900360+cg26971585+cg10126923+cg12916723+
-              #cg22900360 + 
+             #cg22900360 + 
              #metabo + 
              #expression
            + as.factor(my.cigreg) 
-           + utalteru + as.factor(ucsex)  + utbmi + utalkkon
+           + utalteru + as.factor(ucsex) + utbmi + utalkkon
            #+ as.factor(utdiabet)
            , data = cbind(F4.sub,t(F4.methy[cpg.valid, as.character(F4.sub$zz_nr_f4_meth)]))
 )
@@ -148,13 +149,40 @@ toList2 = function(x){
 }
 
 methy.metab.list = toList2(methy.metab)
+colnames(methy.metab.list) = c("metabolites", "cpg")
 
 metab.expresion.list = toList2(metab.expresion)
+colnames(metab.expresion.list) = c("expression","metabolites")
 
 expresion.methy.list = toList(expresion.methy)
+colnames(expresion.methy.list) = c("expression","cpg")
 
 tmp = rbind(metab.expresion.list, methy.metab.list, expresion.methy.list)
 write.csv(unique(c(tmp[,1], tmp[,2])), "property.csv", quote=FALSE)
 
 write.csv(rbind(metab.expresion.list, methy.metab.list, expresion.methy.list), file = "List_associations.csv",quote=FALSE)
 
+
+## Find the candidate motif of association: methylation--expression--metabolite 
+rst = NULL
+motifs = merge(methy.metab.list, expresion.methy.list)
+for(i in 1:nrow(motifs)){
+  e = as.character(motifs$expression[i])
+  F4.sub$expression = F4.expression[e,as.character(F4.sub$zz_nr_s4f4_genexp)]
+  m = as.character(motifs$metabolites[i])
+  F4.sub$metabo = scale(log(F4.metab[as.character(F4.sub$zz_nr_f4_bio),m]))
+  cpg = as.character(motifs$cpg[i])
+  F4.sub$cpg = t(F4.methy[cpg, as.character(F4.sub$zz_nr_f4_meth)])
+  
+  model = lm(metabo ~ cpg + 
+       expression
+       + as.factor(my.cigreg) 
+     + utalteru + as.factor(ucsex) + utbmi + utalkkon,
+     data = F4.sub)
+  
+  rst = rbind(rst, c(summary(model)$coef[2,], summary(model)$coef[3,]))
+}
+
+motifs_selected = motifs[which(rst[,4]>0.05&rst[,8]<0.05),]
+motifs_selected = merge(motifs_selected, annotation, by.x = "expression", by.y = "Probe_Id")
+motifs_selected = cbind(motifs_selected,  cpg_gene= apply(motifs_selected, 1, function(x) return(unlist(xx[x[2]]))))
