@@ -174,9 +174,9 @@ for(i in 1:nrow(motifs)){
   cpg = as.character(motifs$cpg[i])
   F4.sub$cpg = t(F4.methy[cpg, as.character(F4.sub$zz_nr_f4_meth)])
   
-  model = lm(metabo ~ cpg + 
-       expression
-       + as.factor(my.cigreg) 
+  model = lm(metabo ~ cpg 
+      + expression
+      + as.factor(my.cigreg) 
      + utalteru + as.factor(ucsex) + utbmi + utalkkon,
      data = F4.sub)
   
@@ -186,3 +186,98 @@ for(i in 1:nrow(motifs)){
 motifs_selected = motifs[which(rst[,4]>0.05&rst[,8]<0.05),]
 motifs_selected = merge(motifs_selected, annotation, by.x = "expression", by.y = "Probe_Id")
 motifs_selected = cbind(motifs_selected,  cpg_gene= apply(motifs_selected, 1, function(x) return(unlist(xx[x[2]]))))
+
+
+## Mediation analysis
+require(multilevel)
+# N <- 100
+# X <- rnorm(N, 175, 7)
+# M <- 0.7*X + rnorm(N, 0, 5)
+# Y <- 0.4*M + rnorm(N, 0, 5)
+# dfMed <- data.frame(X, M, Y)
+
+F4.sub$my.cigreg = as.factor(F4.sub$my.cigreg)
+F4.sub$ucsex = as.factor(F4.sub$ucsex)
+
+sobel.lm = function(pred, med, out, covariates){
+  NEWDAT <- data.frame(pred = pred, med = med, out = out, covariates)
+  NEWDAT <- na.exclude(NEWDAT)
+  covar = names(covariates)
+  colnames(NEWDAT)[1:3] = c("pred", "med", "out")
+  model1 <- lm(out ~ . - med, data = NEWDAT)
+  model2 <- lm(out ~ ., data = NEWDAT)
+  model3 <- lm(med ~ . - out, data = NEWDAT)
+  mod1.out <- summary(model1)$coef
+  mod2.out <- summary(model2)$coef
+  mod3.out <- summary(model3)$coef
+  indir <- mod3.out[2, 1] * mod2.out[3, 1]
+  effvar <- (mod3.out[2, 1])^2 * (mod2.out[3, 2])^2 + (mod2.out[3, 1])^2 * (mod3.out[2, 2])^2
+  serr <- sqrt(effvar)
+  zvalue = indir/serr
+  out <- list(`Mod1: Y~X` = mod1.out, `Mod2: Y~X+M` = mod2.out, 
+              `Mod3: M~X` = mod3.out, Indirect.Effect = indir, SE = serr, 
+              z.value = zvalue, N = nrow(NEWDAT))
+  return(out)
+}
+
+## Mediation of gene expression for the association between methylation and metabolites.
+rst = NULL
+for(i in 1:nrow(motifs)){
+  e = as.character(motifs$expression[i])
+  F4.sub$expression = F4.expression[e,as.character(F4.sub$zz_nr_s4f4_genexp)]
+  m = as.character(motifs$metabolites[i])
+  F4.sub$metabo = scale(log(F4.metab[as.character(F4.sub$zz_nr_f4_bio),m]))
+  cpg = as.character(motifs$cpg[i])
+  F4.sub$cpg = t(F4.methy[cpg, as.character(F4.sub$zz_nr_f4_meth)])
+  
+  test = sobel.lm(pred = F4.sub$cpg, med = F4.sub$expression, out = F4.sub$metabo, covariates= data.frame(F4.sub$my.cigreg, F4.sub$utalter, F4.sub$ucsex, F4.sub$utbmi, F4.sub$utalkkon))
+  
+  rst = rbind(rst, c(test$Indirect.Effect, test$SE, test$z.value, test$N, p = 1- pnorm(abs(test$z.value)), test$'Mod2: Y~X+M'[3,4]))
+}
+
+write.csv(cbind(motifs, rst), file = "Mediator analysis from the candidates.csv")
+
+## Mediation of cpg or gene for the association between smoking and metabolites.
+sobel.lm2 = function(pred, med, out, covariates){
+  NEWDAT <- data.frame(pred = pred, med = med, out = out, covariates)
+  NEWDAT <- na.exclude(NEWDAT)
+  covar = names(covariates)
+  colnames(NEWDAT)[1:3] = c("pred", "med", "out")
+  model1 <- lm(out ~ . - med, data = NEWDAT)
+  model2 <- lm(out ~ ., data = NEWDAT)
+  model3 <- lm(med ~ . - out, data = NEWDAT)
+  mod1.out <- summary(model1)$coef
+  mod2.out <- summary(model2)$coef
+  mod3.out <- summary(model3)$coef
+  indir <- mod3.out[3, 1] * mod2.out[4, 1]
+  effvar <- (mod3.out[3, 1])^2 * (mod2.out[4, 2])^2 + (mod2.out[4, 1])^2 * (mod3.out[3, 2])^2
+  serr <- sqrt(effvar)
+  zvalue = indir/serr
+  out <- list(`Mod1: Y~X` = mod1.out, `Mod2: Y~X+M` = mod2.out, 
+              `Mod3: M~X` = mod3.out, Indirect.Effect = indir, SE = serr, 
+              z.value = zvalue, N = nrow(NEWDAT))
+  return(out)
+}
+
+
+for(m in metabo.asso){
+  rst = NULL
+  F4.sub$metabo = scale(log(F4.metab[as.character(F4.sub$zz_nr_f4_bio), m]))
+  
+  for(e in rownames(F4.expression)){
+    F4.sub$expression = F4.expression[e,as.character(F4.sub$zz_nr_s4f4_genexp)]
+    test = sobel.lm2(pred = F4.sub$my.cigreg, med = F4.sub$expression, out = F4.sub$metabo, covariates=data.frame(F4.sub$utalter, F4.sub$ucsex, F4.sub$utbmi, F4.sub$utalkkon))
+    rst = rbind(rst, c(test$Indirect.Effect, test$SE, test$z.value, test$N, p = 1- pnorm(abs(test$z.value)), test$'Mod2: Y~X+M'[4,4]))
+  }
+  
+  for(cpg in rownames(F4.methy)){
+    F4.sub$cpg = t(F4.methy[cpg, as.character(F4.sub$zz_nr_f4_meth)])
+    test = sobel.lm2(pred = F4.sub$my.cigreg, med = F4.sub$cpg, out = F4.sub$metabo, covariates=data.frame(F4.sub$utalter, F4.sub$ucsex, F4.sub$utbmi, F4.sub$utalkkon))
+    rst = rbind(rst, c(test$Indirect.Effect, test$SE, test$z.value, test$N, p = 1- pnorm(abs(test$z.value)), test$'Mod2: Y~X+M'[4,4]))
+  }
+  
+  rst = data.frame(mediator = c(rownames(F4.expression),rownames(F4.methy)), rst)
+}
+
+
+
