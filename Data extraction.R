@@ -1,3 +1,5 @@
+require(doMC)
+registerDoMC(cores = 8)
 files = dir("methylation/F3", pattern="*txt.gz", full.names = T)
 files = dir("methylation/F4", pattern="*txt.gz", full.names = T)
 files = files[1:22]
@@ -13,8 +15,7 @@ methy.data = foreach(i = 1:length(files), .combine = rbind ) %dopar% {
 	data = NULL
 	while( length(line) != 0 ) {
 		 tmp = unlist(strsplit(line, split = " "))
-		 #if(tmp[1] %in% cpg.confirmed){
-     if(sum(unlist(lapply(cpgs_of_gene, function(x) tmp[1] %in% x )))>=1){
+		 if(tmp[1] %in% cpg_candidate){
 			data = rbind(data, tmp)
 		 }
 		 line=readLines(f,n=1)
@@ -23,6 +24,7 @@ methy.data = foreach(i = 1:length(files), .combine = rbind ) %dopar% {
 	close(f)
 	return(data)
 }
+write.csv(methy.data, file = "methylation data of candidates_F4.csv")
 
 rst = NULL
 for(i in files){
@@ -35,15 +37,29 @@ for(i in files){
 }
 
 ### extract associations with smoking
-files = dir("Results/F3", pattern="*.csv", full.names = T)
+#files = dir("Results/F3_adjusted for WBC", pattern="*.csv", full.names = T)
 files = dir("Results/F4", pattern="*.csv", full.names = T)
 files = files[1:22]
-cpgs = unlist(cpgs_of_gene)
-association = foreach(i = 1:length(files), .combine = rbind ) %dopar% {
+#cpgs = unlist(cpgs_of_gene)
+association.F4 = foreach(i = 1:length(files), .combine = rbind ) %dopar% {
   tmp = read.csv(files[i], row.names =1)
-  tmp.cpgs = intersect(rownames(tmp), cpgs)
+#  tmp.cpgs = intersect(rownames(tmp), cpgs)
+  tmp.cpgs = which(tmp[,8]<1e-7)
   return(tmp[tmp.cpgs, ])
 }
+
+dim(association.F4)
+#association.F4 = association
+
+files = dir("Results/F3", pattern="*.csv", full.names = T)
+files = files[1:22]
+association.F3 = foreach(i = 1:length(files), .combine = rbind ) %dopar% {
+    tmp = read.csv(files[i], row.names =1)
+    tmp.cpgs = which(tmp[,4]<0.05/nrow(association.F4))
+    return(tmp[tmp.cpgs, ])
+}
+dim(association.F3)
+cpg_candidate = intersect(rownames(association.F3), rownames(association.F4))
 
 #################################################################
 ## Candidates of differentially expressed genes: CLDND1, LRRN3
