@@ -19,8 +19,8 @@ load("intermediate results/expression candidates.RData")
 colnames(F3.expression) = gsub("X", "", colnames(F3.expression))
 
 ## import methylation data
-F4.methy = read.csv("intermediate results/Methylation/methylation data of candidates_F4.csv", row.names = 1)
-F3.methy = read.csv("intermediate results/Methylation/methylation data of candidates_F3.csv", row.names = 1)
+F4.methy = read.csv("intermediate results/Methylation_WBC adjust/methylation data of candidates_F4.csv", row.names = 1)
+F3.methy = read.csv("intermediate results/Methylation_WBC adjust/methylation data of candidates_F3.csv", row.names = 1)
 colnames(F4.methy) = substr(colnames(F4.methy), 2, 10)
 colnames(F3.methy) = substr(colnames(F3.methy), 2, 10)
 
@@ -297,6 +297,29 @@ for(m in metabo.asso){
   
   write.csv(rst, paste(m, "_expression and methylation mediation.csv", sep = ""),row.names=FALSE)
 }
+
+## Mediation of methylation for the association between smoking and gene expression.
+rst = NULL
+for(e in rownames(F4.expression)){
+  F4.sub$expression = F4.expression[e,as.character(F4.sub$zz_nr_s4f4_genexp)]
+  
+  for(cpg in rownames(F4.methy)){
+    F4.sub$cpg = t(F4.methy[cpg, as.character(F4.sub$zz_nr_f4_meth)])
+    test = sobel.lm2(pred = F4.sub$my.cigreg, med = F4.sub$cpg, out = F4.sub$expression, covariates=data.frame(F4.sub$utalter, F4.sub$ucsex, F4.sub$utbmi, F4.sub$utalkkon))
+    rst = rbind(rst, c(test$Indirect.Effect, test$SE, test$z.value, test$N, p = 1- pnorm(abs(test$z.value)), test$'Mod2: Y~X+M'[3,], test$'Mod2: Y~X+M'[4,]))
+  }
+}
+colnames(rst)[1:4] = c("Indirect.Effect", "SE", "z.value", "N")
+colnames(rst)[6:9] = c("S.estimate", "S.SE", "S.tvalue", "S.Pvalue")
+colnames(rst)[10:13] = c("mediator.estimate", "mediator.SE", "mediator.tvalue", "mediator.Pvalue")
+
+expression = rep(rownames(F4.expression),each = 361)
+expression = cbind(expression, as.character(annotation[expression,2]))
+methylation = rep(rownames(F4.methy), 23)
+methylation = cbind(methylation, fullannot[methylation,22])
+rst = cbind(expression, methylation, rst)
+write.csv(rst, file = "Methylation mediated smoking_expression association_F4.csv", row.names = FALSE)  
+
 
 # ## association between the metabolites with smoking in the subset
 # rst = NULL
