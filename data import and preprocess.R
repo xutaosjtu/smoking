@@ -8,7 +8,7 @@ S4 = S4.F4[, c(1:33,64:70)]
 F4 = S4.F4[, c(34:70)]
 S4.metab = read.csv(file="metabolites/_20120716_imputed_Biocr_S4_ZZ_NR.csv")
 F4.metab = read.csv(file="metabolites/KoraF4-metabolomics-quality.controlled-mice.imputed-20100107.csv",sep=";")
-rownames(F4)=F4$sample.id
+rownames(F4.metab)=F4.metab$sample.id
 colnames(F4)
 length(which(F4$sample.id %in% S4.F4$zz_nr_f4_bio))
 colnames(S4);dim(S4)
@@ -47,4 +47,9 @@ F3$my.diab = F3$rtdiabet
 S4$my.diab = S4$utdiabet
 
 F4$my.diab=F4$utdiabet
+
+## physical activity
+F4$my.physical = F4$utphact
+F4$my.physical[which(F4$utphact<=2)]=1
+F4$my.physical[which(F4$utphact>2)]=0
 

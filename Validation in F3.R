@@ -78,3 +78,44 @@ methylation = rep(rownames(F3.methy), 12)
 methylation = cbind(methylation, fullannot[methylation,22])
 rst = cbind(expression, methylation, rst)
 write.csv(rst, file = "Methylation mediated smoking_expression association_F3.csv", row.names = FALSE)  
+
+
+
+rst = NULL
+for(e in rownames(F3.expression)){
+  if(e %in% rownames(F4.expression)){
+    F3.sub$expression = t(F3.expression[e,as.character(F3.sub$zz_nr_f3_genexp)])
+    
+    for(cpg in rownames(F3.methy)){
+      F3.sub$cpg = t(F3.methy[cpg, as.character(F3.sub$zz_nr_f3_meth)])
+      test = sobel.lm(pred = as.factor(F3.sub$my.cigreg), med = F3.sub$expression, out =F3.sub$cpg, covariates=data.frame(F3.sub$rtalteru, as.factor(F3.sub$rcsex), F3.sub$rtbmi, F3.sub$rtalkkon))
+      rst = rbind(rst, c(test$Indirect.Effect, test$SE, test$z.value, test$N, p = 1- pnorm(abs(test$z.value)), test$'Mod2: Y~X+M'[3,], test$'Mod2: Y~X+M'[4,]))
+    }
+  }
+  #else (rst = rbind(rst, rep(NA, 13)))
+}
+colnames(rst)[1:4] = c("Indirect.Effect", "SE", "z.value", "N")
+colnames(rst)[6:9] = c("S.estimate", "S.SE", "S.tvalue", "S.Pvalue")
+colnames(rst)[10:13] = c("mediator.estimate", "mediator.SE", "mediator.tvalue", "mediator.Pvalue")
+
+expression = rep(intersect(rownames(F3.expression), rownames(F4.expression)),each = 361)
+expression = cbind(expression, as.character(annotation[expression,2]))
+methylation = rep(rownames(F3.methy), 12)
+methylation = cbind(methylation, fullannot[methylation,22])
+rst = cbind(expression, methylation, rst)
+write.csv(rst, file = "Expression mediated smoking_methylation association_F3.csv", row.names = FALSE)  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

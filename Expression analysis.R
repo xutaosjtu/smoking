@@ -29,14 +29,14 @@ rm(adj.expr.f4)
 
 
 require(doMC)
-registerDoMC(cores = 4)
+registerDoMC(cores = 8)
 
 data = F3[!is.na(F3$zz_nr_f3_genexp),]
 rownames(data) = data$zz_nr_f3_genexp
 data = data[colnames(F3.expression),]
 association = foreach(i = 1:nrow(F3.expression), .combine = rbind ) %dopar% {
   data$expr = t(F3.expression[i,]) 
-  model = glm(expr ~ as.factor(my.cigreg == 2)+ as.factor(my.cigreg == 1)
+  model = glm(expr ~ as.factor(my.cigreg)
               + rtalter + as.factor(rcsex)
               + as.factor(my.alkkon) + rtbmi #+ as.factor(rtdiabet)
               , data = data
@@ -45,7 +45,7 @@ association = foreach(i = 1:nrow(F3.expression), .combine = rbind ) %dopar% {
   return(c(summary(model)$coefficients[2,], summary(model)$coefficients[3,]))
 }
 rownames(association)=rownames(F3.expression)
-write.csv(association, file = "F3 smoking associated genes_lm_combine FS and NS_diab unadj.csv")
+write.csv(association, file = "F3 smoking associated genes_lm.csv")
 
 
 data = S4[S4$expr_in_S4!="",]
@@ -69,7 +69,7 @@ rownames(data) = data$zz_nr_s4f4_genexp
 data = data[colnames(F4.expression),]
 association = foreach(i = 1:nrow(F4.expression), .combine = rbind ) %dopar% {
   data$expr = F4.expression[i,]
-  model = glm(expr ~ as.factor(my.cigreg ==2 ) + as.factor(my.cigreg == 1)
+  model = glm(expr ~ as.factor(my.cigreg)
               + utalter + as.factor(ucsex)
               + as.factor(my.alkkon) + utbmi #+ as.factor(utdiabet)
               , data = data
@@ -78,4 +78,11 @@ association = foreach(i = 1:nrow(F4.expression), .combine = rbind ) %dopar% {
   return(c(summary(model)$coefficients[2,], summary(model)$coefficients[3,]))
 }
 rownames(association) = rownames(F4.expression)
-write.csv(association, file = "F4 smoking associated genes_lm_combine FS and NS_diab unadj.csv")
+write.csv(association, file = "F4 smoking associated genes_lm.csv")
+
+
+############################################
+## annotation
+############################################
+annotation.S4F4 = read.csv("expression/Annotation HumanHT-12v3 final.csv", sep = ";", row.names = 1)
+annotation.F3 = read.csv("expression/annotation_Illumina_WG_V2_KORA_F3.csv", sep = ";", row.names = 1)

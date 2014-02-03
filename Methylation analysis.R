@@ -1,7 +1,7 @@
 files = dir("methylation/F3", pattern="*txt.gz", full.names = T)
 F3 = subset(F3, subset = !is.na(zz_nr_f3_meth))
 rownames(F3) = F3$zz_nr_f3_meth
-confounder = c( "rtalter", "rcsex", "rtalkkon", "rtbmi")
+confounder = c( "rtalteru", "rcsex", "rtalkkon", "rtbmi")
 ## Sensitivity analysis with WBC
 WBC.F3 = read.csv("WBC_estimation/Data/KF3_estimated_cell_proportions.csv", sep = ";")
 WBC.F3[,1] = substr(WBC.F3[,1], 2, 10)
@@ -52,7 +52,7 @@ for(i in files){
 }
 
 require(doMC)
-registerDoMC(cores = 8)
+registerDoMC(cores = 16)
 
 associations = foreach(i = 1:length(files), .combine = rbind ) %dopar% {
 	chrnum = unlist(strsplit(files[i], split = "_"))[6]
@@ -70,8 +70,8 @@ associations = foreach(i = 1:length(files), .combine = rbind ) %dopar% {
 		 data$mvalue = mvalue
 		 
 		 model = glm(mvalue ~ as.factor(my.cigreg)
-                + utalteru + as.factor(ucsex)
-                + as.factor(my.alkkon) + utbmi #+ as.factor(rtdiabet)
+                + rtalteru + as.factor(rcsex)
+                + as.factor(my.alkkon) + rtbmi + #as.factor(rtdiabet)
                 + CD8T + CD4T + NK + Bcell + Mono + Gran # adjust for WBC
 				, data = data
           #, family = binomial

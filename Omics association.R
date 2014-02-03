@@ -279,13 +279,13 @@ for(m in metabo.asso){
   
   for(e in rownames(F4.expression)){
     F4.sub$expression = F4.expression[e,as.character(F4.sub$zz_nr_s4f4_genexp)]
-    test = sobel.lm2(pred = F4.sub$my.cigreg, med = F4.sub$expression, out = F4.sub$metabo, covariates=data.frame(F4.sub$utalter, F4.sub$ucsex, F4.sub$utbmi, F4.sub$utalkkon))
+    test = sobel.lm2(pred = F4.sub$my.cigreg, med = F4.sub$metabo, out = F4.sub$expression, covariates=data.frame(F4.sub$utalter, F4.sub$ucsex, F4.sub$utbmi, F4.sub$utalkkon))
     rst = rbind(rst, c(test$Indirect.Effect, test$SE, test$z.value, test$N, p = 1- pnorm(abs(test$z.value)), test$'Mod2: Y~X+M'[3,], test$'Mod2: Y~X+M'[4,]))
   }
   
   for(cpg in rownames(F4.methy)){
     F4.sub$cpg = t(F4.methy[cpg, as.character(F4.sub$zz_nr_f4_meth)])
-    test = sobel.lm2(pred = F4.sub$my.cigreg, med = F4.sub$cpg, out = F4.sub$metabo, covariates=data.frame(F4.sub$utalter, F4.sub$ucsex, F4.sub$utbmi, F4.sub$utalkkon))
+    test = sobel.lm2(pred = F4.sub$my.cigreg, med = F4.sub$metabo, out = F4.sub$cpg, covariates=data.frame(F4.sub$utalter, F4.sub$ucsex, F4.sub$utbmi, F4.sub$utalkkon))
     rst = rbind(rst, c(test$Indirect.Effect, test$SE, test$z.value, test$N, p = 1- pnorm(abs(test$z.value)), test$'Mod2: Y~X+M'[3,], test$'Mod2: Y~X+M'[4,]))
   }
   
@@ -295,7 +295,7 @@ for(m in metabo.asso){
   
   rst = data.frame(mediator = c(rownames(F4.expression),rownames(F4.methy)), rst)
   
-  write.csv(rst, paste(m, "_expression and methylation mediation.csv", sep = ""),row.names=FALSE)
+  write.csv(rst, paste(m, "_metabolite mediation.csv", sep = ""),row.names=FALSE)
 }
 
 ## Mediation of methylation for the association between smoking and gene expression.
@@ -321,6 +321,27 @@ rst = cbind(expression, methylation, rst)
 write.csv(rst, file = "Methylation mediated smoking_expression association_F4.csv", row.names = FALSE)  
 
 
+rst = NULL
+for(e in rownames(F4.expression)){
+  F4.sub$expression = F4.expression[e,as.character(F4.sub$zz_nr_s4f4_genexp)]
+  
+  for(cpg in rownames(F4.methy)){
+    F4.sub$cpg = t(F4.methy[cpg, as.character(F4.sub$zz_nr_f4_meth)])
+    test = sobel.lm2(pred = F4.sub$my.cigreg, med = F4.sub$expression, out = F4.sub$cpg, covariates=data.frame(F4.sub$utalter, as.factor(F4.sub$ucsex), F4.sub$utbmi, F4.sub$utalkkon))
+    rst = rbind(rst, c(test$Indirect.Effect, test$SE, test$z.value, test$N, p = 1- pnorm(abs(test$z.value)), test$'Mod2: Y~X+M'[3,], test$'Mod2: Y~X+M'[4,]))
+  }
+}
+colnames(rst)[1:4] = c("Indirect.Effect", "SE", "z.value", "N")
+colnames(rst)[6:9] = c("S.estimate", "S.SE", "S.tvalue", "S.Pvalue")
+colnames(rst)[10:13] = c("mediator.estimate", "mediator.SE", "mediator.tvalue", "mediator.Pvalue")
+
+expression = rep(rownames(F4.expression),each = 361)
+expression = cbind(expression, as.character(annotation[expression,2]))
+methylation = rep(rownames(F4.methy), 23)
+methylation = cbind(methylation, fullannot[methylation,22])
+rst = cbind(expression, methylation, rst)
+write.csv(rst, file = "Expression mediated smoking_methylation association_F4.csv", row.names = FALSE)  
+
 # ## association between the metabolites with smoking in the subset
 # rst = NULL
 # for(m in metabo.asso){
@@ -344,5 +365,5 @@ write.csv(rst, file = "Methylation mediated smoking_expression association_F4.cs
 # rst = data.frame(rst, fdr = p.adjust(rst[,4], method = "BH"), bonf = p.adjust(rst[,4], method = "bonf"))
 # rownames(rst) = metabo.asso
 
-
-
+F4.sub$cpg = t(F4.methy["cg09837977", as.character(F4.sub$zz_nr_f4_meth)])
+F4.sub$expression = F4.expression["ILMN_1773650",as.character(F4.sub$zz_nr_s4f4_genexp)]
