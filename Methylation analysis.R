@@ -151,3 +151,37 @@ rst = foreach(i = 1:length(files), .combine = rbind) %dopar%{
 	write.csv(meta.rst, file = files[i])
 	#return(meta.rst)
 }
+
+
+
+## heatmap plot
+F4.methy = F4.methy[, as.character(F4.sub$zz_nr_f4_meth)]
+rst = apply(F4.methy, 1, function(x)  tapply(x, INDEX = F4.sub$my.cigreg, mean, na.rm = T))
+pdf("methylation in F4.pdf")
+heatmap.2(scale(t(rst)), trace = "none", col = greenred, scale = "none")
+dev.off()
+
+
+outlier = function(x){
+  x[x > (mean(x, na.rm = T) + 4*sd(x, na.rm = T))|x < (mean(x, na.rm = T) - 4*sd(x, na.rm = T))] = NA
+  return(x)
+}
+
+F3.methy = F3.methy[, as.character(F3.sub$zz_nr_f3_meth)]
+rst = apply(F3.methy, 1, function(x)  tapply(x, INDEX = F3.sub$my.cigreg, mean, na.rm = T))
+heatmap.2(rst, Colv=F, dendrogram="row", trace = "none", scale = "none", col = greenred )
+
+
+F4.methy = read.csv("Results/WBC/Smoking associated methylation/Smoking associated methylation sites in F4.csv", row.names = 1)
+F3.methy = read.csv("Results/WBC/Smoking associated methylation/Smoking associated methylation sites in F4 replication in F3.csv", row.names = 1)
+heatmap.2(cbind(F4.methy$Estimate.1, F3.methy$Estimate.1), dendrogram="none", Rowv=NA, scale = "none")
+
+F3.methy = F3.methy[order(F3.methy$CHR, F3.methy$COORDINATE_36),]
+F4.methy = F4.methy[rownames(F3.methy),]
+
+color = rainbow(22)
+plot((F4.methy$Estimate.1), type="h", col = F3.methy$CHR)
+color = rainbow(22,alpha= 0.5)
+points((F3.methy$Estimate), type = "p", col = F3.methy$CHR)
+
+range(F3.methy$Pr...t...1)

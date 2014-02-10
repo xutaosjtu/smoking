@@ -86,3 +86,14 @@ write.csv(association, file = "F4 smoking associated genes_lm.csv")
 ############################################
 annotation.S4F4 = read.csv("expression/Annotation HumanHT-12v3 final.csv", sep = ";", row.names = 1)
 annotation.F3 = read.csv("expression/annotation_Illumina_WG_V2_KORA_F3.csv", sep = ";", row.names = 1)
+
+
+
+
+
+rst = NULL
+for(i in 1:nrow(F4.expression)){
+  M = tapply(F4.expression[i,], INDEX = F4.sub$my.cigreg[order(F4.sub$my.cigreg)],mean)
+  rst= rbind(rst, M)
+}
+rownames(rst) = rownames(F4.expression)
