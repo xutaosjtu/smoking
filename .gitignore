@@ -68,3 +68,7 @@
 /Analysis report/20130429 Smoking Omics Meeting Summary.doc
 .Rproj.user
 *.csv
+*.pdf
+*.R~
+*.RData
+*.txt
