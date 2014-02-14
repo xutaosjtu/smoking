@@ -97,3 +97,18 @@ for(i in 1:nrow(F4.expression)){
   rst= rbind(rst, M)
 }
 rownames(rst) = rownames(F4.expression)
+
+
+## QQ plot
+x = -log10(runif(nrow(F3.asso.expr)))
+y = -log10(F3.asso.expr$Pr...t...1)
+names(y) = rownames(F3.asso.expr)
+x = sort(x)
+y = sort(y)
+jpeg("F3_expression_qqplot.jpg")
+plot(x=x, y =y, pch = 19, col = (y>6)+1,
+     main ="QQ-plot", xlab = "Expected -log10(p)", ylab = "Observed -log10(p)")
+abline(0,1, lty =2)
+text(x=x[which(names(y)=="ILMN_1710326")]-0.5, y =y[which(names(y)=="ILMN_1710326")]+0.2, "CLDND1")
+text(x=x[which(names(y)=="ILMN_1773650")]-0.5, y =y[which(names(y)=="ILMN_1773650")]+0.2, "LRRN3")
+dev.off()

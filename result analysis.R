@@ -135,15 +135,18 @@ tmp1 = expression[as.character(F4.significant$expression), 1:3]
 tmp2 = methylation[as.character(F4.significant$methylation), 1:3]
 link = cbind(tmp1, tmp2)
 
+tmp = cbind(tmp1, tmp2)
+link = rbind(link,tmp)
+
 ## read in expression value
 colors   <- rainbow(seg.num, alpha=0.5);
-pdf("Circos plot2.pdf", height=10, width = 10)
+pdf("Circos plot_F4_F3_2.pdf", height=10, width = 10)
 par(mar=c(2, 2, 2, 2));
 plot(c(1,800), c(1,800), type="n", axes=FALSE, xlab="", ylab="", main="");
 circos(R=180, mapping=methylation.v, type="chr", cir=db, col=colors, print.chr.lab=TRUE, W=10, scale=F);
 circos(R=160, cir=db, W=20, mapping=methylation.v, col.v=3, type="s",  B=TRUE, col=colors[2],  scale=T);
 circos(R=140, cir=db, W=20, mapping=expression.v, col.v=3, type="b",  B=TRUE, col="blue",  scale=T);
-circos(R=120, cir=db, W=40, mapping=link, type="link.pg", col=colors, lwd=2);
+circos(R=120, cir=db, W=40, mapping=link, type="link", col="black", lwd=2);
 dev.off()
 
 
