@@ -46,6 +46,33 @@ F4$my.cigreg[which(F4$utcigreg_sf==1)]=2
 F4$my.cigreg = 4-F4$my.cigreg
 #F4$my.cigreg = as.factor(F4$my.cigreg)
 
+F4$quit_year = F4$uc075_3
+F4$quit_year[which(F4$quit_year==-999)] = NA
+F4$quit_year = F4$utalteru - F4$quit_year
+F4$quit_year[which(F4$quit_year<1)]=1
+F4$quit_year[which(F4$uc075_1 %in% c(1:4))] = 0
+
+F4$smoke_year = F4$uc069_2
+F4$smoke_year[which(F4$smoke_year== -999)] = NA
+F4$smoke_year = F4$utalteru - F4$smoke_year
+
+F4$packy_categ = cut(F4$utpyrs_ai, quantile(F4$utpyrs_ai[which(F4$my.cigreg!=0)], probs = seq(0, 1, 0.2), na.rm = T), include.lowest = T)
+#F4$packy_categ = cut(F4$smoke_year, quantile(F4$smoke_year[which(F4$my.cigreg!=0)], probs = seq(0, 1, 0.2), na.rm = T), include.lowest = T)
+tmp = levels(F4$packy_categ)
+F4$packy_categ = as.character(F4$packy_categ)
+F4$packy_categ[which(F4$my.cigreg==0)] = "NS"
+F4$packy_categ = factor(F4$packy_categ, levels = c("NS", tmp))
+
+F4$quity_categ = cut(F4$quit_year, quantile(F4$quit_year[which(F4$my.cigreg!=0)], probs = seq(0, 1, 0.2), na.rm = T), include.lowest = T)
+tmp = levels(F4$quity_categ)
+F4$quity_categ = as.character(F4$quity_categ)
+F4$quity_categ[which(F4$my.cigreg==0)] = "NS"
+F4$quity_categ = factor(F4$quity_categ, levels = c("NS", tmp))
+
+
+table(F4$packy_categ, useNA="always")
+table(F4$my.cigreg, useNA = "alwa")
+
 ## diabetes
 F3$my.diab = F3$rtdiabet
 
@@ -57,4 +84,5 @@ F4$my.diab=F4$utdiabet
 F4$my.physical = F4$utphact
 F4$my.physical[which(F4$utphact<=2)]=1
 F4$my.physical[which(F4$utphact>2)]=0
+
 

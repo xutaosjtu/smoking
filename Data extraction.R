@@ -4,6 +4,103 @@ files = dir("methylation/F3", pattern="*txt.gz", full.names = T)
 files = dir("methylation/F4", pattern="*txt.gz", full.names = T)
 files = files[1:22]
 #################################################################
+## Identification of candidates
+#################################################################
+#anno.expr = read.csv("expression/Annotation HumanHT-12v3 final.csv")
+require("FDb.InfiniumMethylation.hg18")
+require("illuminaHumanv3.db")
+require("IlluminaHumanMethylation450k.db")
+
+## Expression probe --> Gene Symbol
+x <- illuminaHumanv3SYMBOL
+# Get the probe identifiers that are mapped to a gene symbol
+mapped_probes <- mappedkeys(x)
+# Convert to a list
+exprprobe2symbol <- as.list(x[mapped_probes])
+
+## Expression probe --> Chromsome
+x <- illuminaHumanv3CHR
+# Get the probe identifiers that are mapped to a chromosome
+mapped_probes <- mappedkeys(x)
+# Convert to a list
+xx <- as.list(x[mapped_probes])
+exprprobe2chr = unlist(xx)
+
+## Expression probe --> Start Position
+x <- illuminaHumanv3CHRLOC
+# Get the probe identifiers that are mapped to chromosome locations
+mapped_probes <- mappedkeys(x)
+# Convert to a list
+xx <- as.list(x[mapped_probes])
+exprprobe2start = sapply(xx, function(x){
+  if(x<0) x = org.Hs.egCHRLENGTHS[names(x)]+x
+  return(x)
+})
+exprprobe2start = unlist(exprprobe2start)
+names(exprprobe2start) = substr(names(exprprobe2start), 1, 12)
+
+## Expression probe --> End position
+x <- illuminaHumanv3CHRLOCEND
+# Get the probe identifiers that are mapped to chromosome locations
+mapped_probes <- mappedkeys(x)
+# Convert to a list
+xx <- as.list(x[mapped_probes])
+exprprobe2end = sapply(xx, function(x){
+  if(x<0) x = org.Hs.egCHRLENGTHS[names(x)]+x
+  return(x)
+})
+exprprobe2end = unlist(exprprobe2end)
+names(exprprobe2end) = substr(names(exprprobe2end), 1, 12)
+
+
+## CpG site --> Gene symbol
+x <- IlluminaHumanMethylation450kSYMBOL
+# Get the probe identifiers that are mapped to a gene symbol
+mapped_probes <- mappedkeys(x)
+# Convert to a list
+cpg2symbol <- as.list(x[mapped_probes])
+
+## CpG site --> Chromsome
+x <- IlluminaHumanMethylation450kCHR37
+# Get the probe identifiers that are mapped to a chromosome
+mapped_probes <- mappedkeys(x)
+# Convert to a list
+cpg2chr <- as.list(x[mapped_probes])
+cpg2chr = unlist(cpg2chr)
+
+## CpG site --> Position
+cpg2position = as.list(IlluminaHumanMethylation450kCPG36)
+cpg2position = unlist(cpg2position)
+
+exprin1M = function(cpg){
+  chr = cpg2chr[cpg]
+  position = cpg2position[cpg]
+  
+  exprprobes = names(exprprobe2chr)[which(exprprobe2chr==as.character(chr))]
+  exprprobes.start = exprprobe2start[exprprobes]
+  probes = names(exprprobes.start)[which(exprprobes.start<position+1000000&exprprobes.start>position-1000000)]
+  return(probes)
+}
+
+exprprobe.1M = sapply(cpg.candidate, exprin1M)
+
+cpgin2K = function(expr){
+  chr = exprprobe2chr[expr]
+  start = exprprobe2start[expr]
+  end = exprprobe2start[expr]
+  
+  cpgs = names(cpg2chr)[which(cpg2chr==as.character(chr))]
+  cpgs.pos = cpg2position[cpgs]
+  probes = names(cpgs.pos)[which(cpgs.pos>start-1000000 & cpgs.pos<start+1000000)]
+  return(probes)
+}
+
+cpg.1M = sapply(rownames(F4.expression), cpgin1M)
+
+#hm450.hg18 <-getPlatform(platform="HM450", genome = 'hg18')
+#show(hm450.hg18)
+
+#################################################################
 ## run the code in mehtylation analysis to obtain cpg.confirmed
 #################################################################
 methy.data = foreach(i = 1:length(files), .combine = rbind ) %dopar% {
