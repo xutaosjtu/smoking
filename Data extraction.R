@@ -69,37 +69,40 @@ cpg2chr <- as.list(x[mapped_probes])
 cpg2chr = unlist(cpg2chr)
 
 ## CpG site --> Position
-cpg2position = as.list(IlluminaHumanMethylation450kCPG36)
+cpg2position = as.list(IlluminaHumanMethylation450kCPG37)
 cpg2position = unlist(cpg2position)
 
+## Probes of gene expression within the 1M region of a cpg site
 exprin1M = function(cpg){
   chr = cpg2chr[cpg]
   position = cpg2position[cpg]
   
   exprprobes = names(exprprobe2chr)[which(exprprobe2chr==as.character(chr))]
   exprprobes.start = exprprobe2start[exprprobes]
-  probes = names(exprprobes.start)[which(exprprobes.start<position+1000000&exprprobes.start>position-1000000)]
+  probes = names(exprprobes.start)[which(exprprobes.start<position+1000000 & exprprobes.start>position-1000000)]
   return(probes)
 }
 
-exprprobe.1M = sapply(cpg.candidate, exprin1M)
+exprprobe.1M = sapply(cpg.candidates, exprin1M)
 
-cpgin2K = function(expr){
+## CpG sites within the 1M region of a expression probe
+cpgin = function(expr, region = 1000000){
   chr = exprprobe2chr[expr]
   start = exprprobe2start[expr]
   end = exprprobe2start[expr]
   
   cpgs = names(cpg2chr)[which(cpg2chr==as.character(chr))]
   cpgs.pos = cpg2position[cpgs]
-  probes = names(cpgs.pos)[which(cpgs.pos>start-1000000 & cpgs.pos<start+1000000)]
+  probes = names(cpgs.pos)[which(cpgs.pos>start-region & cpgs.pos<start+region)]
   return(probes)
 }
 
 cpg.1M = sapply(rownames(F4.expression), cpgin1M)
-
+cpg.68K = sapply(rownames(F4.expression), cpgin, region = 68000)
 #hm450.hg18 <-getPlatform(platform="HM450", genome = 'hg18')
 #show(hm450.hg18)
 
+load("cpg and expression around 1Mb.RData")
 #################################################################
 ## run the code in mehtylation analysis to obtain cpg.confirmed
 #################################################################
