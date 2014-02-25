@@ -1,9 +1,10 @@
 require(gplots)
 F4.expr = read.csv("Results/WBC/Smoking associated expression/F4 smoking associated genes_lm.csv", row.names = 1)
 #F3.expr = read.csv("Results/WBC/Smoking associated expression/F3 smoking associated genes_lm.csv")
+source("Genomic_infor.R")
+load("cpg and expression around 1Mb.RData")
 
 exprprobe2chr[exprprobe.1M[[1]]]
-
 cpg.cis = sapply(exprprobe.1M, 
   function(x){
     x = x[F4.expr[x, 8]<8.4488e-06]
@@ -12,6 +13,18 @@ cpg.cis = sapply(exprprobe.1M,
 )
 hits = sapply(cpg.cis, length)
 cpg.cis = exprprobe.1M[(hits!=0)]
+
+require(doMC)
+registerDoMC(cores = 8)
+files = dir("Results/WBC/Smoking associated methylation/F4_adjusted for WBC/", full.names = T)
+association.F4 = foreach(i = 1:length(files), .combine = rbind ) %dopar% {
+    tmp = read.csv(files[i], row.names = 1)
+    tmp = tmp[rownames(tmp) %in% cpgs.all,]
+    return(tmp)
+}
+
+
+
 
 pdf("CpG sites with significant cis effects on expression.pdf")
 for(i in 1:length(cpg.cis)){
@@ -45,16 +58,16 @@ association.F4 = foreach(i = 1:length(files), .combine = rbind ) %dopar% {
 
 F4.methy = read.csv("F4 methylation around 1M of cpgs.csv", row.names = 1)
 
-expr.cis = sapply(cpg.68K, 
+expr.cis = sapply(cpg.1M, 
                  function(x){
                    x = x[F4.methy[x, 8]<8.487523e-06]
                    return(x)
                  }
 )
 hits = sapply(expr.cis, length)
-expr.cis = cpg.68K[(hits!=0)]
+expr.cis = cpg.1M[(hits!=0)]
 
-pdf("CpGs 68K around smoking related genes.pdf")
+pdf("CpGs 1M around smoking related genes_2.pdf")
 for(i in 1:length(expr.cis)){
   tmp = expr.cis[[i]]
   plotCI(x = cpg2position[tmp], 
@@ -74,7 +87,7 @@ for(i in 1:length(expr.cis)){
 }
 dev.off()
 
-pdf("CpGs 68K around smoking related genes.pdf")
+pdf("CpGs 1M around smoking related genes_2.pdf")
 for(i in 1:length(expr.cis)){
   tmp = expr.cis[[i]]
   y = -log10(F4.methy[tmp, 8])
@@ -85,15 +98,22 @@ for(i in 1:length(expr.cis)){
        col = (F4.methy[tmp, 8]<8.487523e-06)+1, 
        pch = 19,
        #label = unlist(cpg2symbol[tmp]), 
+       ylab = "-log10(P)",
        xlab = paste("chr", cpg2chr[tmp[1]]),
-       main = names(expr.cis[i])
+       main = names(expr.cis[i]),
+       yaxt = 'n'
   )
+  y.range = round(range(y, na.rm = T),0)
+  pos = seq(from = y.range[1], to = y.range[2], by = 1)
+  axis(2, at = pos, labels = abs(pos))
   abline(h = 0, lty = 2)
+  
+  expr.asso=F4.expr[names(expr.cis)[i],5]
   segments(x0 = exprprobe2start[names(expr.cis[i])],  
            y0 = 0, 
            x1 = exprprobe2end[names(expr.cis[i])],
            y1 = 0,
-           col = "red", lwd = 10)
+           col = c("lightblue","pink")[(expr.asso>0)+1], lwd = 15)
 }
 dev.off()
 

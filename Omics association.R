@@ -23,11 +23,12 @@ F4.methy = read.csv("intermediate results/Methylation_WBC adjust/methylation dat
 F3.methy = read.csv("intermediate results/Methylation_WBC adjust/methylation data of candidates_F3.csv", row.names = 1)
 colnames(F4.methy) = substr(colnames(F4.methy), 2, 10)
 colnames(F3.methy) = substr(colnames(F3.methy), 2, 10)
+load("metabolites/smoking associated metabolites.RData")
 
 ## Subset with all three types of data
 F4.sub = subset(F4, expr_in_F4!="" & !is.na(zz_nr_f4_meth) & !is.na(zz_nr_f4_bio))
 
-F4.sub = subset(F4, !is.na(zz_nr_f4_meth) & !is.na(zz_nr_f4_bio))
+#F4.sub = subset(F4, !is.na(zz_nr_f4_meth) & !is.na(zz_nr_f4_bio))
 
 colnames(F3)[27:189] = gsub("_PTC", "", colnames(F3)[27:189])
 colnames(F3)[27:189] = gsub("_", ".", colnames(F3)[27:189])
@@ -92,8 +93,8 @@ for(cpg in cpg.valid){
   for(m in metabo.asso){
     F4.sub$metabolite = scale(log(F4.metab[as.character(F4.sub$zz_nr_f4_bio),m]))
     model = lm(methy ~ metabolite
-               + as.factor(my.cigreg) 
-               + utalteru + as.factor(ucsex)  + utbmi + utalkkon
+               #+ as.factor(my.cigreg) 
+               #+ utalteru + as.factor(ucsex)  + utbmi + utalkkon
                #+ as.factor(utdiabet)
                , data = F4.sub
     )
