@@ -12,7 +12,6 @@ source("Genomic_infor.R")
 
 exprprobe.1M = sapply(cpg.candidates, exprin1M)
 
-
 cpg.1M = sapply(rownames(F4.expression), cpgin1M)
 cpg.68K = sapply(rownames(F4.expression), cpgin, region = 68000)
 #hm450.hg18 <-getPlatform(platform="HM450", genome = 'hg18')

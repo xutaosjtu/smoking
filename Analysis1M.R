@@ -4,28 +4,109 @@ F4.expr = read.csv("Results/WBC/Smoking associated expression/F4 smoking associa
 source("Genomic_infor.R")
 load("cpg and expression around 1Mb.RData")
 
-exprprobe2chr[exprprobe.1M[[1]]]
-cpg.cis = sapply(exprprobe.1M, 
-  function(x){
-    x = x[F4.expr[x, 8]<8.4488e-06]
-    return(x)
-  }
-)
-hits = sapply(cpg.cis, length)
-cpg.cis = exprprobe.1M[(hits!=0)]
-
-require(doMC)
-registerDoMC(cores = 8)
-files = dir("Results/WBC/Smoking associated methylation/F4_adjusted for WBC/", full.names = T)
-association.F4 = foreach(i = 1:length(files), .combine = rbind ) %dopar% {
+extract = function(cpgs){
+  alpha = 0.05/length(cpgs)
+  require(doMC)
+  registerDoMC(cores = 8)
+  files = dir("Results/WBC/Smoking associated methylation/F4_adjusted for WBC/", full.names = T)
+  association.F4 = foreach(i = 1:length(files), .combine = rbind ) %dopar% {
     tmp = read.csv(files[i], row.names = 1)
-    tmp = tmp[rownames(tmp) %in% cpgs.all,]
+    tmp = tmp[rownames(tmp) %in% cpgs,]
     return(tmp)
+  }
+  return(association.F4)
 }
 
+exprSig = function(expr){
+  alpha = 0.05/length(unique(unlist(expr)))
+  expr.sig = sapply(expr, 
+                    function(x){
+                      x = x[F4.expr[x, 8]<alpha]
+                      return(x)
+                    }
+  )
+  hits = sapply(expr.sig, length)
+  expr.sig = expr.sig[(hits!=0)]
+  return(expr.sig)
+}
 
+cpgSig = function(cpg){
+  alpha = 0.05/length(unique(unlist(cpg)))
+  cpg.sig = sapply(cpg, 
+                   function(x){
+                     x = x[F4.methy[x, 8]<alpha]
+                     return(x)
+                   }
+  )
+  cpg.sig = sapply(cpg.sig, function(x) return(x[which(!is.na(x))]))
+  hits = sapply(cpg.sig, length)
+  cpg.sig = cpg.sig[(hits!=0)]
+  return(cpg.sig)
+}
 
+#exprprobe2chr[exprprobe.1M[[1]]]
+cpg.candidates = names(exprprobe.1M)
+## Analyze the gene expression around 1M of cpg sites
+cpgs.select = cpg.candidates
+expr.select = NULL
 
+while(length(cpg.candidates)!=0){
+  ## Searching differentially expressed genes around differentially mehtylated sites
+  ##1. Extract genes 1M around the differntially methylated cpg sites
+  expr.1M=sapply(cpg.candidates, exprin1M)
+  
+  ##2. Find the significant differential expression
+  expr.sig = exprSig(expr.1M)
+  expr.candidates = unique(unlist(expr.sig))
+  
+  expr.select = c(expr.select, expr.candidates)
+  
+  ##3. Extract the cpg sites 1M around the differentially expressed genes
+  cpg.1M = sapply(expr.candidates, cpgin1M)
+  cpgs.all = unique(unlist(cpg.1M))
+  F4.methy= extract(cpgs.all)
+  
+  ##4. Find the significant differential methylation
+  cpg.sig = cpgSig(cpg.1M)
+  
+  cpg.candidates = setdiff(unlist(cpg.sig), cpgs.select)
+  print(length(cpg.candidates))
+  cpgs.select = c(cpgs.select, cpg.candidates)
+}
+
+## Analyze the methylation sites expression around 1M of gene
+load("cpg and expression around 1Mb.RData")
+expr.candidates = names(cpg.1M)
+expr.select = expr.candidates
+cpgs.select = NULL
+
+while(length(expr.candidates)!=0){
+  ## Searching differentially expressed genes around differentially mehtylated sites
+    
+  ##1. Extract the cpg sites 1M around the differentially expressed genes
+  cpg.1M = sapply(expr.candidates, cpgin1M)
+  cpgs.all = unique(unlist(cpg.1M))
+  F4.methy= extract(cpgs.all)
+  
+  ##2. Find the significant differential methylation
+  cpg.sig = cpgSig(cpg.1M)
+  cpg.candidates = unlist(unlist(cpg.sig))
+  
+  cpgs.select = c(cpg.candidates, cpgs.select)
+  
+  ##3. Extract genes 1M around the differntially methylated cpg sites
+  expr.1M=sapply(cpg.candidates, exprin1M)
+  
+  ##4. Find the significant differential expression
+  expr.sig = exprSig(expr.1M)
+  expr.candidates = unique(unlist(expr.sig))
+   
+  expr.candidates = setdiff(expr.candidates, expr.select)
+  print(length(expr.candidates))
+  expr.select = c(expr.select,expr.candidates)
+}
+
+########
 pdf("CpG sites with significant cis effects on expression.pdf")
 for(i in 1:length(cpg.cis)){
   genes = cpg.cis[[i]]

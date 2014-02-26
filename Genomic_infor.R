@@ -66,13 +66,13 @@ cpg2position = unlist(cpg2position)
 
 
 ## Probes of gene expression within the 1M region of a cpg site
-exprin1M = function(cpg){
+exprin1M = function(cpg, region = 1000000){
   chr = cpg2chr[cpg]
   position = cpg2position[cpg]
   
   exprprobes = names(exprprobe2chr)[which(exprprobe2chr==as.character(chr))]
   exprprobes.start = exprprobe2start[exprprobes]
-  probes = names(exprprobes.start)[which(exprprobes.start<position+1000000 & exprprobes.start>position-1000000)]
+  probes = names(exprprobes.start)[which(exprprobes.start<region+1000000 & exprprobes.start>region-1000000)]
   return(probes)
 }
 
