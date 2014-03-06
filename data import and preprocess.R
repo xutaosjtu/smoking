@@ -1,18 +1,18 @@
-require(lumi)
-require(doMC)
+#require(lumi)
+#require(doMC)
 ## Importing metabolomics data
 F3 = read.csv("metabolites/K2912_Xu_F3_trans20130304.csv", sep=";")
 rownames(F3)=F3$ZZ_nr
 S4.F4 = read.csv("metabolites/K2912_Xu_S4F4_trans120213.csv", sep=";")
 S4 = S4.F4[, c(1:33,64:70)]
 F4 = S4.F4[, c(34:70)]
-S4.metab = read.csv(file="metabolites/_20120716_imputed_Biocr_S4_ZZ_NR.csv")
-F4.metab = read.csv(file="metabolites/KoraF4-metabolomics-quality.controlled-mice.imputed-20100107.csv",sep=";")
-rownames(F4.metab)=F4.metab$sample.id
-colnames(F4)
-length(which(F4$sample.id %in% S4.F4$zz_nr_f4_bio))
-colnames(S4);dim(S4)
-length(which(S4$S4Metabo_ZZ %in% S4.F4$zz_nr_s4_bio))
+S4.metab = read.csv(file="metabolites/_20120716_imputed_Biocr_S4_ZZ_NR.csv", row.names = 1)
+F4.metab = read.csv(file="metabolites/KoraF4-metabolomics-quality.controlled-mice.imputed-20100107.csv",sep=";", row.names = 1)
+#rownames(F4.metab)=F4.metab$sample.id
+#colnames(F4)
+#length(which(F4$sample.id %in% S4.F4$zz_nr_f4_bio))
+#colnames(S4);dim(S4)
+#length(which(S4$S4Metabo_ZZ %in% S4.F4$zz_nr_s4_bio))
 
 ## alcohol consumption
 F3$my.alkkon = rep(0, nrow(F3))

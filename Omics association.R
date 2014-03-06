@@ -1,18 +1,7 @@
 setwd("H:/Smoking and methylation")
 
 ## import metabolomics data
-F3 = read.csv("metabolites/K2912_Xu_F3_trans20130304.csv", sep=";")
-rownames(F3)=F3$ZZ_nr
-S4.F4 = read.csv("metabolites/K2912_Xu_S4F4_trans120213.csv", sep=";")
-S4 = S4.F4[, c(1:33,64:70)]
-F4 = S4.F4[, c(34:70)]
-#S4.metab = read.csv(file="metabolites/_20120716_imputed_Biocr_S4_ZZ_NR.csv")
-F4.metab = read.csv(file="metabolites/KoraF4-metabolomics-quality.controlled-mice.imputed-20100107.csv",sep=";", row.names = 1)
-rownames(F4)=F4$sample.id
-colnames(F4)
-length(which(F4$sample.id %in% S4.F4$zz_nr_f4_bio))
-colnames(S4);dim(S4)
-length(which(S4$S4Metabo_ZZ %in% S4.F4$zz_nr_s4_bio))
+source("source/data import and preprocess.R")
 
 ## import gene expression data
 load("intermediate results/expression candidates.RData")
@@ -93,9 +82,9 @@ for(cpg in cpg.valid){
   for(m in metabo.asso){
     F4.sub$metabolite = scale(log(F4.metab[as.character(F4.sub$zz_nr_f4_bio),m]))
     model = lm(methy ~ metabolite
-               #+ as.factor(my.cigreg) 
-               #+ utalteru + as.factor(ucsex)  + utbmi + utalkkon
-               #+ as.factor(utdiabet)
+               + as.factor(my.cigreg) 
+               + utalteru + as.factor(ucsex) + utbmi + utalkkon
+               + as.factor(utdiabet)
                , data = F4.sub
     )
     tmp = c(tmp, summary(model)$coef[2,])
@@ -106,7 +95,18 @@ rownames(rst) = cpg.valid
 methy.metab = apply(rst[,4*(1:length(metabo.asso))], 2, function(x) which(x<0.05))
 names(methy.metab) = metabo.asso
 
-#length(metabo.asso)
+## QQ plot
+plot(y = sort(-log10(rst[,4*(1:length(metabo.asso))])), x = sort(-log10(runif(6498))))
+
+pdf("methylation metabolite assocaition.pdf")
+par(mfrow = c(3,3))
+for(i in 1:length(metabo.asso)){
+  plot(sort(-log10(runif(361))), sort(-log10(rst[,4*i])),  main = metabo.asso[i], ylab = "Observed -log10(P)", xlab = "Expected -log10(P)")
+  abline(0,1, col = "blue", lty = 2)
+  abline(h = -log10(0.05/361), col = "red")
+}
+dev.off()
+
 
 ##?? where does the methy.asso come from #####################################
 methy.metab = sapply(methy.metab, function(x) return(intersect(names(x), methy.asso)))
@@ -211,32 +211,13 @@ motifs_selected = cbind(motifs_selected,  cpg_gene= apply(motifs_selected, 1, fu
 F4.sub$my.cigreg = as.factor(F4.sub$my.cigreg)
 F4.sub$ucsex = as.factor(F4.sub$ucsex)
 
-sobel.lm = function(pred, med, out, covariates){
-  NEWDAT <- data.frame(pred = pred, med = med, out = out, covariates)
-  NEWDAT <- na.exclude(NEWDAT)
-  covar = names(covariates)
-  colnames(NEWDAT)[1:3] = c("pred", "med", "out")
-  model1 <- lm(out ~ . - med, data = NEWDAT)
-  model2 <- lm(out ~ ., data = NEWDAT)
-  model3 <- lm(med ~ . - out, data = NEWDAT)
-  mod1.out <- summary(model1)$coef
-  mod2.out <- summary(model2)$coef
-  mod3.out <- summary(model3)$coef
-  indir <- mod3.out[2, 1] * mod2.out[3, 1]
-  effvar <- (mod3.out[2, 1])^2 * (mod2.out[3, 2])^2 + (mod2.out[3, 1])^2 * (mod3.out[2, 2])^2
-  serr <- sqrt(effvar)
-  zvalue = indir/serr
-  out <- list(`Mod1: Y~X` = mod1.out, `Mod2: Y~X+M` = mod2.out, 
-              `Mod3: M~X` = mod3.out, Indirect.Effect = indir, SE = serr, 
-              z.value = zvalue, N = nrow(NEWDAT))
-  return(out)
-}
+
 
 ## Mediation of gene expression for the association between methylation and metabolites.
 rst = NULL
 for(i in 1:nrow(motifs)){
   e = as.character(motifs$expression[i])
-  F4.sub$expression = F4.expression[e,as.character(F4.sub$zz_nr_s4f4_genexp)]
+  F4.sub$expression = scale(F4.expression[e,as.character(F4.sub$zz_nr_s4f4_genexp)])
   m = as.character(motifs$metabolites[i])
   F4.sub$metabo = scale(log(F4.metab[as.character(F4.sub$zz_nr_f4_bio),m]))
   cpg = as.character(motifs$cpg[i])
@@ -255,27 +236,6 @@ colnames(rst)[12:15] = c("expr.estimate", "expr.SE", "expr.tvalue", "expr.Pvalue
 write.csv(cbind(motifs, rst), file = "Mediator analysis from the candidates_F4.csv", row.names = FALSE)
 
 ## Mediation of cpg or gene for the association between smoking and metabolites.
-sobel.lm2 = function(pred, med, out, covariates){
-  NEWDAT <- data.frame(pred = pred, med = med, out = out, covariates)
-  NEWDAT <- na.exclude(NEWDAT)
-  covar = names(covariates)
-  colnames(NEWDAT)[1:3] = c("pred", "med", "out")
-  model1 <- lm(out ~ . - med, data = NEWDAT)
-  model2 <- lm(out ~ ., data = NEWDAT)
-  model3 <- lm(med ~ . - out, data = NEWDAT)
-  mod1.out <- summary(model1)$coef
-  mod2.out <- summary(model2)$coef
-  mod3.out <- summary(model3)$coef
-  indir <- mod3.out[3, 1] * mod2.out[4, 1]
-  effvar <- (mod3.out[3, 1])^2 * (mod2.out[4, 2])^2 + (mod2.out[4, 1])^2 * (mod3.out[3, 2])^2
-  serr <- sqrt(effvar)
-  zvalue = indir/serr
-  out <- list(`Mod1: Y~X` = mod1.out, `Mod2: Y~X+M` = mod2.out, 
-              `Mod3: M~X` = mod3.out, Indirect.Effect = indir, SE = serr, 
-              z.value = zvalue, N = nrow(NEWDAT))
-  return(out)
-}
-
 for(m in metabo.asso){
   rst = NULL
   F4.sub$metabo = scale(log(F4.metab[as.character(F4.sub$zz_nr_f4_bio), m]))
@@ -304,7 +264,7 @@ for(m in metabo.asso){
 ## Mediation of methylation for the association between smoking and gene expression.
 rst = NULL
 for(e in rownames(F4.expression)){
-  F4.sub$expression = F4.expression[e,as.character(F4.sub$zz_nr_s4f4_genexp)]
+  F4.sub$expression = scale(F4.expression[e,as.character(F4.sub$zz_nr_s4f4_genexp)])
   
   for(cpg in rownames(F4.methy)){
     F4.sub$cpg = t(F4.methy[cpg, as.character(F4.sub$zz_nr_f4_meth)])
