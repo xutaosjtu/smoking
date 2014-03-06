@@ -63,7 +63,7 @@ for(e in rownames(F3.expression)){
     for(cpg in rownames(F3.methy)){
       F3.sub$cpg = t(F3.methy[cpg, as.character(F3.sub$zz_nr_f3_meth)])
       test = sobel.lm(pred = as.factor(F3.sub$my.cigreg), med = F3.sub$cpg, out = F3.sub$expression, covariates=data.frame(F3.sub$rtalteru, as.factor(F3.sub$rcsex), F3.sub$rtbmi, F3.sub$rtalkkon))
-      rst = rbind(rst, c(test$Indirect.Effect, test$SE, test$z.value, test$N, p = 1- pnorm(abs(test$z.value)), test$'Mod2: Y~X+M'[3,], test$'Mod2: Y~X+M'[4,]))
+      rst = rbind(rst, c(test$Indirect.Effect, test$SE, test$z.value, test$N, p = 1- pnorm(abs(test$z.value)), test$'Mod2: Y~X+M'[2,], test$'Mod2: Y~X+M'[3,]))
     }
   }
   #else (rst = rbind(rst, rep(NA, 13)))
@@ -89,7 +89,7 @@ for(e in rownames(F3.expression)){
     for(cpg in rownames(F3.methy)){
       F3.sub$cpg = t(F3.methy[cpg, as.character(F3.sub$zz_nr_f3_meth)])
       test = sobel.lm(pred = as.factor(F3.sub$my.cigreg), med = F3.sub$expression, out =F3.sub$cpg, covariates=data.frame(F3.sub$rtalteru, as.factor(F3.sub$rcsex), F3.sub$rtbmi, F3.sub$rtalkkon))
-      rst = rbind(rst, c(test$Indirect.Effect, test$SE, test$z.value, test$N, p = 1- pnorm(abs(test$z.value)), test$'Mod2: Y~X+M'[3,], test$'Mod2: Y~X+M'[4,]))
+      rst = rbind(rst, c(test$Indirect.Effect, test$SE, test$z.value, test$N, p = 1- pnorm(abs(test$z.value)), test$'Mod2: Y~X+M'[2,], test$'Mod2: Y~X+M'[3,]))
     }
   }
   #else (rst = rbind(rst, rep(NA, 13)))
