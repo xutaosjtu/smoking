@@ -8,7 +8,7 @@ files = files[1:22]
 #################################################################
 #anno.expr = read.csv("expression/Annotation HumanHT-12v3 final.csv")
 
-source("Genomic_infor.R")
+source("source/Genomic_infor.R")
 
 exprprobe.1M = sapply(cpg.candidates, exprin1M)
 

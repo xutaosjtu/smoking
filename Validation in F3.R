@@ -106,16 +106,3 @@ rst = cbind(expression, methylation, rst)
 write.csv(rst, file = "Expression mediated smoking_methylation association_F3.csv", row.names = FALSE)  
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-

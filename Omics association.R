@@ -92,7 +92,7 @@ for(cpg in cpg.valid){
   rst = rbind(rst, tmp)
 }
 rownames(rst) = cpg.valid
-methy.metab = apply(rst[,4*(1:length(metabo.asso))], 2, function(x) which(x<0.05))
+methy.metab = apply(rst[,4*(1:length(metabo.asso))], 2, function(x) which(x<0.05/361))
 names(methy.metab) = metabo.asso
 
 ## QQ plot

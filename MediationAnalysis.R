@@ -30,7 +30,9 @@ source("source/SobelTest.R")
 
 ## import annotation data
 load("methylation/fullannotInd.rda")
-annotation = read.csv("expression/Annotation HumanHT-12v3 final.csv")
+annotation = read.csv2("expression/Annotation HumanHT-12v3 final.csv")
+
+require(mediation)
 
 
 ##############
@@ -86,12 +88,44 @@ methylation = cbind(methylation, fullannot[methylation,22])
 rst = cbind(expression, methylation, rst)
 write.csv(rst, file = "Expression mediated smoking_methylation association_F4.csv", row.names = FALSE)  
 
+## Mediation of cpg or gene for the association between smoking and metabolites.
+F4.sub = subset(F4, expr_in_F4!="" & !is.na(zz_nr_f4_meth) & !is.na(zz_nr_f4_bio))
+for(m in metabo.asso){
+  rst = NULL
+  F4.sub$metabo = scale(log(F4.metab[as.character(F4.sub$zz_nr_f4_bio), m]))
+  
+  
+  F4.sub = subset(F4, expr_in_F4!="" & !is.na(zz_nr_f4_bio))
+  for(e in rownames(F4.expression)){
+    F4.sub$expression = F4.expression[e,as.character(F4.sub$zz_nr_s4f4_genexp)]
+    test = sobel.lm2(pred = F4.sub$my.cigreg, med = F4.sub$metabo, out = F4.sub$expression, covariates=data.frame(F4.sub$utalter, F4.sub$ucsex, F4.sub$utbmi, F4.sub$utalkkon))
+    rst = rbind(rst, c(test$Indirect.Effect, test$SE, test$z.value, test$N, p = 1- pnorm(abs(test$z.value)), test$'Mod2: Y~X+M'[3,], test$'Mod2: Y~X+M'[4,]))
+  }
+  
+  
+  F4.sub = subset(F4, !is.na(zz_nr_f4_meth) &!is.na(zz_nr_f4_bio))
+  for(cpg in rownames(F4.methy)){
+    F4.sub$cpg = t(F4.methy[cpg, as.character(F4.sub$zz_nr_f4_meth)])
+    test = sobel.lm2(pred = F4.sub$my.cigreg, med = F4.sub$metabo, out = F4.sub$cpg, covariates=data.frame(F4.sub$utalter, F4.sub$ucsex, F4.sub$utbmi, F4.sub$utalkkon))
+    rst = rbind(rst, c(test$Indirect.Effect, test$SE, test$z.value, test$N, p = 1- pnorm(abs(test$z.value)), test$'Mod2: Y~X+M'[3,], test$'Mod2: Y~X+M'[4,]))
+  }
+  
+  colnames(rst)[1:4] = c("Indirect.Effect", "SE", "z.value", "N")
+  colnames(rst)[6:9] = c("S.estimate", "S.SE", "S.tvalue", "S.Pvalue")
+  colnames(rst)[10:13] = c("mediator.estimate", "mediator.SE", "mediator.tvalue", "mediator.Pvalue")
+  
+  rst = data.frame(mediator = c(rownames(F4.expression),rownames(F4.methy)), rst)
+  
+  write.csv(rst, paste(m, "_metabolite mediation.csv", sep = ""),row.names=FALSE)
+}
+
+
 ##############
 ##    F3    ##
 ##          ##
 ##############
 ##
-## Mediation of methylation for the association between smoking and gene expression.
+## Mediation of methylation/expression for the association between smoking and gene expression.
 rst = NULL
 for(e in rownames(F3.expression)){
   F3.sub$expression = F3.expression[e,as.character(F3.sub$zz_nr_f3_genexp)]
@@ -100,7 +134,7 @@ for(e in rownames(F3.expression)){
   for(cpg in rownames(F3.methy)){
     F3.sub$cpg = t(F3.methy[cpg, as.character(F3.sub$zz_nr_f3_meth)])
     F3.sub$cpg = scale(F3.sub$cpg)
-    test = sobel.lm(pred = as.factor(F3.sub$my.cigreg), med = F3.sub$cpg, out = F3.sub$expression, covariates=data.frame(F3.sub$rtalteru, F3.sub$rcsex, F3.sub$rtbmi, F3.sub$rtalkkon))
+    test = sobel.lm(pred = as.factor(F3.sub$my.cigreg), med = F3.sub$expression, out = F3.sub$cpg, covariates=data.frame(F3.sub$rtalteru, as.factor(F3.sub$rcsex), F3.sub$rtbmi, F3.sub$rtalkkon))
     rst = rbind(rst, c(test$Indirect.Effect, test$SE, test$z.value, test$N, p = 1- pnorm(abs(test$z.value)), test$'Mod2: Y~X+M'[2,], test$'Mod2: Y~X+M'[3,]))
   }
 }
@@ -113,8 +147,8 @@ expression = cbind(expression, as.character(annotation[expression,2]))
 methylation = rep(rownames(F3.methy), nrow(F3.expression))
 methylation = cbind(methylation, fullannot[methylation,22])
 rst = cbind(expression, methylation, rst)
-write.csv(rst, file = "Methylation mediated smoking_expression association_scaled_F3.csv", row.names = FALSE)  
+#write.csv(rst, file = "Methylation mediated smoking_expression association_scaled_F3.csv", row.names = FALSE)  
 
-#write.csv(rst, file = "Expression mediated smoking_methylation association_scaled_F3.csv", row.names = FALSE) 
+write.csv(rst, file = "Expression mediated smoking_methylation association_scaled_F3.csv", row.names = FALSE) 
 
 
