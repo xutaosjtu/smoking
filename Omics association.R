@@ -15,7 +15,7 @@ colnames(F3.methy) = substr(colnames(F3.methy), 2, 10)
 load("metabolites/smoking associated metabolites.RData")
 
 ## Subset with all three types of data
-F4.sub = subset(F4, expr_in_F4!="" & !is.na(zz_nr_f4_meth) & !is.na(zz_nr_f4_bio))
+F4.sub = subset(F4, expr_in_F4!="" & !is.na(zz_nr_f4_meth))# & !is.na(zz_nr_f4_bio))
 
 #F4.sub = subset(F4, !is.na(zz_nr_f4_meth) & !is.na(zz_nr_f4_bio))
 

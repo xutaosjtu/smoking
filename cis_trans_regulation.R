@@ -1,3 +1,4 @@
+setwd("../")
 # load("expression/Expression_f4_adjusted_technical_variables.Rdata")
 # F4.expr = adj.expr.f4
 # remove(adj.expr.f4)
@@ -23,11 +24,12 @@ data = F4
 require(doMC)
 registerDoMC(cores = 22)
 
-exprmethyAsso.2 = function(x, data){
-  data$expr = F4.expr[x,]
-  model = lm(mvalue ~ expr + as.factor(my.cigreg)
-              + utalteru + as.factor(ucsex)
-              + as.factor(my.alkkon) + utbmi #+ as.factor(rtdiabet)
+exprmethyAsso.2 = function(x, data, gene.expr){
+  data$expr = gene.expr[x,]
+  model = lm(mvalue ~ expr
+    #+ as.factor(my.cigreg)
+    #          + utalteru + as.factor(ucsex)
+     #         + as.factor(my.alkkon) + utbmi #+ as.factor(rtdiabet)
               + CD8T + CD4T + NK + Bcell + Mono + Gran # adjust for WBC
               , data = data
               #, family = binomial
@@ -36,7 +38,7 @@ exprmethyAsso.2 = function(x, data){
 }
 
 
-exprmethyAsso = function(x){
+exprmethyAsso = function(x, F4.expr){
   data$expr = F4.expr[x,]
   model = cor.test(data$mvalue, data$expr, method = "spearman")
   return(model$p.value)
@@ -99,8 +101,8 @@ associations = foreach(i = 1:length(files), .combine = rbind ) %dopar% {
     CpG = c(CpG,tmp[1])
     mvalue = as.numeric(tmp[-1])
     data$mvalue = mvalue[indx]
-    
-    asso = sapply(rownames(F4.expr), exprmethyAsso.2, data=data)
+        
+    asso = sapply(rownames(F4.expr), exprmethyAsso.2, data=data, gene.expr = F4.expr)
     rst.chr = rbind(rst.chr, asso)
     
     line=readLines(f,n=1)
@@ -108,6 +110,36 @@ associations = foreach(i = 1:length(files), .combine = rbind ) %dopar% {
   close(f)
   rownames(rst.chr) = CpG
   colnames(rst.chr) = rownames(F4.expr)
-  write.csv(rst.chr, file = paste("association in chr",chrnum,"_adjust WBC.csv"))
+  write.csv(rst.chr, file = paste("Adj WBC/association in chr",chrnum,"_WBC only.csv"))
   return(rst.chr)
 }
+
+
+qqplot.2 = function(pvalues, ...){
+  x = -log10(runif(length(pvalues)))
+  y = -log10(pvalues)
+  #names(y) = rownames(F3.asso.expr)
+  x = sort(x)
+  y = sort(y)
+  plot(x=x, y =y, pch = 19, col = (y>7)+1,
+       xlab = "Expected -log10(p)", ylab = "Observed -log10(p)", ...)
+  abline(0,1, lty =2)
+}
+
+#files = dir("Results/WBC/methylation expression association/", full.names=T)
+files = dir("No adj/", full.names=T)
+associations = NULL
+for(i in 1:length(files)){
+  tmp = read.csv(files[i], row.names=1)
+  associations = rbind(associations, tmp)
+}
+
+png("Association of cpg sites with gene expression_no adj_EWAS.png", width = 40, height = 60, unit = "in", res = 180)
+par(mfrow = c(6, 4))
+for(i in 1:ncol(associations)){
+  qqplot.2(associations[,i], main = rownames(F4.expr)[i] )
+}
+dev.off()
+
+
+

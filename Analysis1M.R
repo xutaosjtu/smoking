@@ -2,7 +2,7 @@ require(gplots)
 F4.expr = read.csv("Results/WBC/Smoking associated expression/F4 smoking associated genes_lm.csv", row.names = 1)
 #F3.expr = read.csv("Results/WBC/Smoking associated expression/F3 smoking associated genes_lm.csv")
 source("Genomic_infor.R")
-load("cpg and expression around 1Mb.RData")
+load("../cpg and expression around 1Mb.RData")
 
 extract = function(cpgs){
   alpha = 0.05/length(cpgs)
